@@ -6,7 +6,6 @@ import { ComposerTools } from './ComposerTools'
 import { ExamplePrompts } from './ExamplePrompts'
 import { Button } from '../ui/Button'
 import { useGeneratorStore } from '../../stores/generatorStore'
-import { AI_CONFIG } from '../../lib/ai/aiConfig'
 import { t, type Lang } from '../../lib/i18n/translations'
 
 const OutputPanel = lazy(() => import('../output/OutputPanel'))
@@ -21,8 +20,6 @@ export function ChatComposer({ lang }: Props) {
     const generationStage = useGeneratorStore((s) => s.generationStage)
     const isGenerating = useGeneratorStore((s) => s.isGenerating)
     const startGeneration = useGeneratorStore((s) => s.startGeneration)
-
-    const hasApiKey = !!AI_CONFIG.apiKey
 
     const handleGenerate = useCallback(() => {
         if (!rawIdea.trim() || isGenerating) return
@@ -92,17 +89,6 @@ export function ChatComposer({ lang }: Props) {
                     />
                     <ExamplePrompts onSelect={handleExampleSelect} lang={lang} />
                     <ComposerTools lang={lang} />
-
-                    {/* AI Status indicator */}
-                    <div className="flex items-center justify-center gap-2">
-                        <span
-                            className={`inline-block h-2 w-2 rounded-full ${hasApiKey ? 'bg-emerald-500' : 'bg-yellow-500'
-                                }`}
-                        />
-                        <span className="text-xs text-slate-500">
-                            {hasApiKey ? t(lang, 'aiConnected') : t(lang, 'aiKeyNotSet')}
-                        </span>
-                    </div>
 
                     <div className="flex justify-end px-1 md:px-0">
                         <Button

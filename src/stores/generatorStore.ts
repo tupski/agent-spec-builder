@@ -14,7 +14,6 @@ import type {
 import type { GenerationStage as ProgressStage } from '../types'
 import type { AnalysisResult } from '../lib/analyzers/ambiguityAnalyzer'
 import { callAi } from '../lib/ai/aiClient'
-import { AI_CONFIG } from '../lib/ai/aiConfig'
 import { generateQuestions } from '../lib/ai/generateQuestions'
 import { buildSystemPrompt } from '../lib/ai/generateSystemPrompt'
 import { parseAiResponse } from '../lib/ai/parseAiResponse'
@@ -301,19 +300,6 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
     startGeneration: async () => {
         const state = get()
         if (!state.rawIdea.trim()) return
-
-        // Check API key early
-        if (!AI_CONFIG.apiKey) {
-            set({
-                generationStage: 'error',
-                error: state.lang === 'id'
-                    ? 'Kunci API AI belum diset'
-                    : 'AI API key not set',
-                errorDetails: 'Set VITE_OPENAI_API_KEY in .env file',
-                isGenerating: false,
-            })
-            return
-        }
 
         // Create abort controller for this generation
         const abortController = new AbortController()

@@ -11,20 +11,14 @@ export type CallAiOptions = {
     signal?: AbortSignal
 }
 
-function sanitizeError(raw: string): string {
-    const key = AI_CONFIG.apiKey
-    if (!key) return raw
-    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return raw.replace(new RegExp(escaped, 'g'), '***')
-}
-
 export async function callAi(
     messages: ChatMessage[],
-    options?: CallAiOptions
+    options?: CallAiOptions,
 ): Promise<string> {
     const controller = new AbortController()
     const timeoutId = setTimeout(
-        () => controller.abort(new DOMException('AI request timed out', 'TimeoutError')),
+        () =>
+            controller.abort(new DOMException('AI request timed out', 'TimeoutError')),
         AI_CONFIG.timeoutMs,
     )
 
@@ -34,9 +28,6 @@ export async function callAi(
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-    }
-    if (AI_CONFIG.apiKey) {
-        headers['Authorization'] = `Bearer ${AI_CONFIG.apiKey}`
     }
 
     let body: string
@@ -52,7 +43,7 @@ export async function callAi(
         throw new Error(`AI request serialization failed: ${(err as Error).message}`)
     }
 
-    const endpoint = `${AI_CONFIG.baseUrl}/chat/completions`
+    const endpoint = `${AI_CONFIG.baseUrl}${AI_CONFIG.endpoint}`
 
     let response: Response
     try {
@@ -71,7 +62,11 @@ export async function callAi(
         if (err instanceof DOMException && err.name === 'AbortError') {
             throw new Error('AI request was cancelled')
         }
-        throw new Error(`AI request failed: ${sanitizeError(errMsg)}`)
+        throw new Error(
+            `Gagal menghubungi AI Proxy. Periksa Worker proxy, CORS, atau koneksi internet.\n\n` +
+            `EN: Failed to contact AI Proxy. Please check the Worker proxy, CORS, or internet connection.\n\n` +
+            `Details: ${errMsg}`,
+        )
     }
 
     clearTimeout(timeoutId)
@@ -88,13 +83,13 @@ export async function callAi(
             errorText = await response.text().catch(() => 'Unknown error')
         }
         throw new Error(
-            `AI returned ${response.status}: ${sanitizeError(errorText)}`,
+            `AI Proxy returned ${response.status} for ${endpoint}: ${errorText}`,
         )
     }
 
     let data: Record<string, unknown>
     try {
-        data = await response.json() as Record<string, unknown>
+        data = (await response.json()) as Record<string, unknown>
     } catch (err) {
         throw new Error(
             `Failed to parse AI response: ${(err as Error).message}`,
