@@ -3,6 +3,7 @@ export type ParsedAiResponse = {
     mermaidDiagrams: { title: string; code: string }[]
     summary: string
     assumptions: string[]
+    usedFallback: boolean
 }
 
 function tryExtractJsonBlock(raw: string): Record<string, unknown> | null {
@@ -66,6 +67,7 @@ export function parseAiResponse(raw: string): ParsedAiResponse {
         mermaidDiagrams: [],
         summary: '',
         assumptions: [],
+        usedFallback: false,
     }
 
     if (!raw || !raw.trim()) {
@@ -85,6 +87,7 @@ export function parseAiResponse(raw: string): ParsedAiResponse {
             mermaidDiagrams: [],
             summary: '',
             assumptions: [],
+            usedFallback: true,
         }
     }
 
@@ -144,5 +147,5 @@ export function parseAiResponse(raw: string): ParsedAiResponse {
         }
     }
 
-    return { files, mermaidDiagrams, summary, assumptions }
+    return { files, mermaidDiagrams, summary, assumptions, usedFallback: false }
 }

@@ -44,6 +44,7 @@ ${prompt.trim()}
 export async function generateQuestions(
     prompt: string,
     lang: 'id' | 'en',
+    signal?: AbortSignal,
 ): Promise<Question[]> {
     if (!prompt || !prompt.trim()) {
         return []
@@ -55,7 +56,7 @@ export async function generateQuestions(
         const raw = await callAi([
             { role: 'system', content: systemMessage },
             { role: 'user', content: prompt },
-        ], { temperature: 0.3 })
+        ], { temperature: 0.3, signal })
 
         // Try to extract JSON array from response
         let jsonStr = raw.trim()

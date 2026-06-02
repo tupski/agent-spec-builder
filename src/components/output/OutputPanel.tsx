@@ -3,7 +3,6 @@ import {
     RefreshCw,
     FileText,
     AlertTriangle,
-    Loader2,
 } from 'lucide-react'
 import { useGeneratorStore } from '../../stores/generatorStore'
 import { OutputTabs } from './OutputTabs'
@@ -13,6 +12,7 @@ import { ExportActions } from './ExportActions'
 import { QuestionFlow } from '../questions/QuestionFlow'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
+import { GenerationProgress } from '../generation/GenerationProgress'
 import { t, type Lang } from '../../lib/i18n/translations'
 
 type Props = {
@@ -55,8 +55,8 @@ export function OutputPanel({ lang }: Props) {
         )
     }
 
-    const handleNewSpec = () => {
-        reset()
+    const handleBackToForm = () => {
+        clearError()
     }
 
     const handleRetry = () => {
@@ -64,33 +64,18 @@ export function OutputPanel({ lang }: Props) {
         startGeneration()
     }
 
-    // ── Stage: analyzing ──────────────────────────────────────────
-    if (generationStage === 'analyzing') {
-        return (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-                <Loader2 className="h-8 w-8 text-cyan-400 animate-spin mb-4" />
-                <p className="text-slate-300 font-medium">
-                    {t(lang, 'analyzing')}
-                </p>
-            </div>
-        )
-    }
-
     // ── Stage: generating ─────────────────────────────────────────
     if (generationStage === 'generating') {
-        return (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-                <Loader2 className="h-8 w-8 text-cyan-400 animate-spin mb-4" />
-                <p className="text-slate-300 font-medium">
-                    {t(lang, 'generatingDocs')}
-                </p>
-            </div>
-        )
+        return <GenerationProgress lang={lang} />
     }
 
     // ── Stage: questioning ────────────────────────────────────────
     if (generationStage === 'questioning') {
         return <QuestionFlow lang={lang} />
+    }
+    // ── Stage: analyzing (legacy fallback) ─────────────────────────
+    if (generationStage === 'analyzing') {
+        return <GenerationProgress lang={lang} />
     }
 
     // ── Stage: error ──────────────────────────────────────────────
@@ -120,8 +105,8 @@ export function OutputPanel({ lang }: Props) {
                             <RefreshCw className="h-4 w-4" />
                             {t(lang, 'errorRetry')}
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={handleNewSpec}>
-                            {t(lang, 'newSpec')}
+                        <Button variant="ghost" size="sm" onClick={handleBackToForm}>
+                            {lang === 'id' ? 'Kembali ke Form' : 'Back to Form'}
                         </Button>
                     </div>
                 </Card>
@@ -174,7 +159,7 @@ export function OutputPanel({ lang }: Props) {
                         allFiles={generatedFiles}
                         projectName={projectName}
                     />
-                    <Button variant="ghost" size="sm" onClick={handleNewSpec}>
+                    <Button variant="ghost" size="sm" onClick={reset}>
                         <RefreshCw className="h-4 w-4" />
                         {t(lang, 'newSpec')}
                     </Button>

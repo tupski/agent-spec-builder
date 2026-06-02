@@ -1,4 +1,5 @@
 import { useCallback, lazy, Suspense } from 'react'
+import { GenerationProgress } from '../generation/GenerationProgress'
 import { Send } from 'lucide-react'
 import { AutoGrowTextarea } from './AutoGrowTextarea'
 import { ComposerTools } from './ComposerTools'
@@ -45,25 +46,46 @@ export function ChatComposer({ lang }: Props) {
         [setRawIdea],
     )
 
-    // Show composer only in idle/analyzing/questioning/done-with-no-files
-    // Show OutputPanel in done/error/generating
+    // Show composer when idle (before generation or after cancel)
     const showComposer =
         generationStage === 'idle' ||
         generationStage === 'analyzing'
 
+    // Show progress while generating (analyzing stage with progress system active)
+    const showProgress =
+        generationStage === 'analyzing' && isGenerating
+
+    // Show output panel when done, error, or questioning
     const showOutput =
         generationStage === 'generating' ||
         generationStage === 'done' ||
         generationStage === 'error' ||
         generationStage === 'questioning'
 
+    const cancelledMessage = useGeneratorStore((s) => s.cancelledMessage)
+
+    // When cancelled message is shown and user starts typing, clear it
+    const handleIdeaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setRawIdea(e.target.value)
+        if (cancelledMessage) {
+            useGeneratorStore.setState({ cancelledMessage: null })
+        }
+    }, [setRawIdea, cancelledMessage])
+
     return (
         <div className="mx-auto max-w-3xl px-4 py-6 md:py-8">
-            {showComposer && (
+            {showComposer && !isGenerating && (
                 <div className="flex flex-col gap-4">
+                    {/* Cancelled banner */}
+                    {cancelledMessage && (
+                        <div className="rounded-lg border border-slate-600/50 bg-slate-800/50 px-4 py-3 text-sm text-slate-300">
+                            {cancelledMessage}
+                        </div>
+                    )}
+
                     <AutoGrowTextarea
                         value={rawIdea}
-                        onChange={(e) => setRawIdea(e.target.value)}
+                        onChange={handleIdeaChange}
                         onKeyDown={handleKeyDown}
                         onGenerate={handleGenerate}
                         placeholder={t(lang, 'placeholderIdea')}
@@ -97,6 +119,10 @@ export function ChatComposer({ lang }: Props) {
                         {t(lang, 'ctrlEnter')}
                     </p>
                 </div>
+            )}
+
+            {showProgress && (
+                <GenerationProgress lang={lang} />
             )}
 
             {showOutput && (
