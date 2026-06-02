@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { useGeneratorStore } from '../../stores/generatorStore'
 import { QuestionCard } from './QuestionCard'
 import { Button } from '../ui/Button'
@@ -12,7 +12,6 @@ export function QuestionFlow({ lang }: Props) {
     const questions = useGeneratorStore((s) => s.aiQuestions)
     const currentQuestionIndex = useGeneratorStore((s) => s.currentQuestionIndex)
     const questionAnswers = useGeneratorStore((s) => s.questionAnswers)
-    const nextQuestion = useGeneratorStore((s) => s.nextQuestion)
     const prevQuestion = useGeneratorStore((s) => s.prevQuestion)
     const isLastQuestion = useGeneratorStore((s) => s.isLastQuestion)
     const continueGeneration = useGeneratorStore((s) => s.continueGeneration)
@@ -21,7 +20,6 @@ export function QuestionFlow({ lang }: Props) {
     if (questions.length === 0) return null
 
     const currentQuestion = questions[currentQuestionIndex]
-    const currentAnswered = questionAnswers[currentQuestion.id] !== undefined
     const allAnswered = questions.every((q) => questionAnswers[q.id] !== undefined)
 
     const handleFinish = () => {
@@ -45,6 +43,7 @@ export function QuestionFlow({ lang }: Props) {
                 </div>
 
                 <QuestionCard
+                    key={currentQuestion.id}
                     question={currentQuestion}
                     questionNumber={currentQuestionIndex + 1}
                     totalQuestions={questions.length}
@@ -62,7 +61,7 @@ export function QuestionFlow({ lang }: Props) {
                         {t(lang, 'previous')}
                     </Button>
 
-                    {isLastQuestion() ? (
+                    {isLastQuestion() && (
                         <Button
                             size="sm"
                             onClick={handleFinish}
@@ -73,16 +72,6 @@ export function QuestionFlow({ lang }: Props) {
                                 : allAnswered
                                     ? t(lang, 'generateDocs')
                                     : t(lang, 'answerAll')}
-                        </Button>
-                    ) : (
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={nextQuestion}
-                            disabled={!currentAnswered}
-                        >
-                            {t(lang, 'next')}
-                            <ChevronRight className="h-4 w-4" />
                         </Button>
                     )}
                 </div>
