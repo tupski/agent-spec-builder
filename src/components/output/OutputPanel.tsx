@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
     RefreshCw,
     FileText,
@@ -32,7 +32,7 @@ export function OutputPanel({ lang }: Props) {
     const [activeTab, setActiveTab] = useState<string>('')
 
     // Set initial active tab when files change
-    useMemo(() => {
+    useEffect(() => {
         if (generatedFiles.length > 0 && !activeTab) {
             setActiveTab(generatedFiles[0].filename)
         }
