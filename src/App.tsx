@@ -1,15 +1,20 @@
 import { AppShell } from './components/layout/AppShell'
+import { ChatComposer } from './components/composer/ChatComposer'
+import { useGeneratorStore } from './stores/generatorStore'
 
 export default function App() {
-  const handleNewSpec = () => {
-    console.log('New Spec')
-  }
+  const reset = useGeneratorStore((s) => s.reset)
+
+  const handleNewSpec = () => reset()
+
   const handleDrafts = () => {
     console.log('Drafts')
   }
+
   const handleImport = () => {
     console.log('Import')
   }
+
   const handleExport = () => {
     console.log('Export')
   }
@@ -21,16 +26,7 @@ export default function App() {
       onImport={handleImport}
       onExport={handleExport}
     >
-      <div className="mx-auto max-w-3xl px-4 py-16">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Generate Agent-Ready Project Documents
-          </h2>
-          <p className="text-slate-400">
-            Masukkan ide project kamu dan dapatkan PRD, PLAN, AGENTS, dan dokumen lainnya.
-          </p>
-        </div>
-      </div>
+      <ChatComposer />
     </AppShell>
   )
 }
