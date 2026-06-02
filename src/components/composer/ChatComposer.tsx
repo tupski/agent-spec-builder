@@ -4,6 +4,7 @@ import { AutoGrowTextarea } from './AutoGrowTextarea'
 import { ComposerTools } from './ComposerTools'
 import { Button } from '../ui/Button'
 import { QuestionFlow } from '../questions/QuestionFlow'
+import { OutputPanel } from '../output/OutputPanel'
 import { useGeneratorStore } from '../../stores/generatorStore'
 import { extractRequirements } from '../../lib/analyzers/requirementExtractor'
 import { analyzeAmbiguity } from '../../lib/analyzers/ambiguityAnalyzer'
@@ -142,11 +143,7 @@ export function ChatComposer() {
                     <p className="text-slate-400">Generating documents...</p>
                 </div>
             ) : generationPhase === 'done' ? (
-                <div className="text-center py-16">
-                    <p className="text-slate-400">
-                        Done! Output panel coming in Phase 5.
-                    </p>
-                </div>
+                <OutputPanel />
             ) : null}
         </div>
     )
