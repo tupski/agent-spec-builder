@@ -10,9 +10,12 @@ type Props = {
 
 export function ModelSelector({ lang }: Props) {
     const preferredModel = useGeneratorStore((s) => s.preferredModel)
-    const customModelName = useGeneratorStore((s) => s.customModelName)
     const setPreferredModel = useGeneratorStore((s) => s.setPreferredModel)
-    const setCustomModelName = useGeneratorStore((s) => s.setCustomModelName)
+
+    const translated = MODEL_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: t(lang, `modelValue_${opt.value}`),
+    }))
 
     return (
         <div className="flex flex-col gap-1.5">
@@ -21,20 +24,11 @@ export function ModelSelector({ lang }: Props) {
                 <HelpTooltip tooltipId="preferredModel" lang={lang} />
             </label>
             <Select
-                options={MODEL_OPTIONS}
+                options={translated}
                 value={preferredModel}
                 onChange={(v) => setPreferredModel(v as any)}
                 placeholder={t(lang, 'placeholderModel')}
             />
-            {preferredModel === 'custom' && (
-                <input
-                    type="text"
-                    value={customModelName}
-                    onChange={(e) => setCustomModelName(e.target.value)}
-                    placeholder={t(lang, 'placeholderCustomModel')}
-                    className="mt-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50"
-                />
-            )}
         </div>
     )
 }

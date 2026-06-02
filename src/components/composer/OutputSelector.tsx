@@ -27,9 +27,10 @@ export function OutputSelector({ value, onChange, lang }: Props) {
         return () => document.removeEventListener('mousedown', handleClick)
     }, [open])
 
+    // Full Package = ALL main docs selected AND no extra docs selected
     const isFullPackage =
         FULL_PACKAGE_DOCS.every((d) => value.includes(d)) &&
-        value.every((d) => [...FULL_PACKAGE_DOCS, 'DATABASE_SCHEMA.md', 'API_SPEC.md', 'CHANGELOG.md', '.env.example'].includes(d)) === false
+        value.every((d) => ALL_OUTPUT_DOCS.includes(d))
 
     const toggleFullPackage = useCallback(
         (checked: boolean) => {
@@ -94,7 +95,7 @@ export function OutputSelector({ value, onChange, lang }: Props) {
                             <label className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-slate-700/50 cursor-pointer text-sm text-slate-200">
                                 <Checkbox.Root
                                     checked={isFullPackage}
-                                    onCheckedChange={toggleFullPackage}
+                                    onCheckedChange={(c) => toggleFullPackage(c === true)}
                                     className="flex h-4 w-4 items-center justify-center rounded border border-slate-500 bg-slate-800 data-[state=checked]:bg-cyan-600 data-[state=checked]:border-cyan-600"
                                 >
                                     <Checkbox.Indicator>

@@ -94,7 +94,7 @@ interface GeneratorState {
 
 const initialState = {
     rawIdea: '',
-    agentTarget: 'roo-code' as AgentTarget,
+    agentTarget: 'generic' as AgentTarget,
     preferredModel: 'auto' as ModelOption,
     customModelName: '',
     selectedOutputs: [

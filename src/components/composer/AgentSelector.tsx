@@ -12,6 +12,11 @@ export function AgentSelector({ lang }: Props) {
     const agentTarget = useGeneratorStore((s) => s.agentTarget)
     const setAgentTarget = useGeneratorStore((s) => s.setAgentTarget)
 
+    const translated = AGENT_TARGETS.map((opt) => ({
+        value: opt.value,
+        label: t(lang, `agentValue_${opt.value}`),
+    }))
+
     return (
         <div className="flex flex-col gap-1.5">
             <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
@@ -19,7 +24,7 @@ export function AgentSelector({ lang }: Props) {
                 <HelpTooltip tooltipId="agentTarget" lang={lang} />
             </label>
             <Select
-                options={AGENT_TARGETS}
+                options={translated}
                 value={agentTarget}
                 onChange={(v) => setAgentTarget(v as any)}
                 placeholder={t(lang, 'placeholderAgent')}
