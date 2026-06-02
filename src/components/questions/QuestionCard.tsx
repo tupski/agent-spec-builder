@@ -3,37 +3,42 @@ import type { Question } from '../../types'
 import { CustomAnswerInput } from './CustomAnswerInput'
 import { useGeneratorStore } from '../../stores/generatorStore'
 import { cn } from '../../lib/utils/cn'
+import { t, type Lang } from '../../lib/i18n/translations'
 
 interface QuestionCardProps {
     question: Question
     questionNumber: number
     totalQuestions: number
+    lang: Lang
 }
 
 export function QuestionCard({
     question,
     questionNumber,
     totalQuestions,
+    lang,
 }: QuestionCardProps) {
     const [selectedOption, setSelectedOption] = useState<string | null>(null)
     const [showCustom, setShowCustom] = useState(false)
     const [answered, setAnswered] = useState(false)
-    const setAnswer = useGeneratorStore((s) => s.setAnswer)
+    const answerQuestion = useGeneratorStore((s) => s.answerQuestion)
+
+    const customAnswerLabel = lang === 'id' ? 'Jawaban custom' : 'Custom answer'
 
     const handleSelectOption = (option: string) => {
-        if (option === 'Jawaban custom') {
+        if (option === customAnswerLabel) {
             setShowCustom(true)
             setSelectedOption(null)
             return
         }
         setSelectedOption(option)
         setShowCustom(false)
-        setAnswer(question.id, option)
+        answerQuestion(question.id, option)
         setAnswered(true)
     }
 
     const handleCustomSubmit = (answer: string) => {
-        setAnswer(question.id, answer)
+        answerQuestion(question.id, answer)
         setAnswered(true)
     }
 
@@ -42,9 +47,9 @@ export function QuestionCard({
     if (answered) {
         return (
             <div className="rounded-xl border border-emerald-700/50 bg-emerald-900/20 p-4 text-center">
-                <p className="text-emerald-400 font-medium">✓ Jawaban tersimpan</p>
+                <p className="text-emerald-400 font-medium">✓ {t(lang, 'answerSaved')}</p>
                 <p className="text-sm text-slate-400 mt-1">
-                    {selectedOption ?? 'Jawaban custom'}
+                    {selectedOption ?? t(lang, 'customAnswer')}
                 </p>
             </div>
         )
@@ -60,7 +65,7 @@ export function QuestionCard({
                     />
                 </div>
                 <span className="text-xs text-slate-400 shrink-0">
-                    {questionNumber} / {totalQuestions}
+                    {t(lang, 'questionOf')} {questionNumber} / {totalQuestions}
                 </span>
             </div>
 
@@ -92,11 +97,11 @@ export function QuestionCard({
                 ))}
             </div>
 
-            {showCustom && <CustomAnswerInput onSubmit={handleCustomSubmit} />}
+            {showCustom && <CustomAnswerInput onSubmit={handleCustomSubmit} lang={lang} />}
 
             {selectedOption && (
                 <p className="text-xs text-slate-500 text-center">
-                    Klik tombol Next di bawah untuk lanjut
+                    {t(lang, 'clickNext')}
                 </p>
             )}
         </div>

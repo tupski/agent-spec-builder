@@ -1,17 +1,33 @@
 import { useState, useMemo } from 'react'
-import { RefreshCw, FileText } from 'lucide-react'
+import {
+    RefreshCw,
+    FileText,
+    AlertTriangle,
+    Loader2,
+} from 'lucide-react'
 import { useGeneratorStore } from '../../stores/generatorStore'
 import { OutputTabs } from './OutputTabs'
 import { MermaidPreview } from './MermaidPreview'
 import { EditableMarkdown } from './EditableMarkdown'
 import { ExportActions } from './ExportActions'
+import { QuestionFlow } from '../questions/QuestionFlow'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
+import { t, type Lang } from '../../lib/i18n/translations'
 
-export function OutputPanel() {
+type Props = {
+    lang: Lang
+}
+
+export function OutputPanel({ lang }: Props) {
     const generatedFiles = useGeneratorStore((s) => s.generatedFiles)
     const setGeneratedFiles = useGeneratorStore((s) => s.setGeneratedFiles)
-    const setGenerationPhase = useGeneratorStore((s) => s.setGenerationPhase)
+    const generationStage = useGeneratorStore((s) => s.generationStage)
+    const error = useGeneratorStore((s) => s.error)
+    const errorDetails = useGeneratorStore((s) => s.errorDetails)
+    const clearError = useGeneratorStore((s) => s.clearError)
+    const startGeneration = useGeneratorStore((s) => s.startGeneration)
+    const reset = useGeneratorStore((s) => s.reset)
 
     const [activeTab, setActiveTab] = useState<string>('')
 
@@ -24,33 +40,109 @@ export function OutputPanel() {
 
     const currentFile = generatedFiles.find((f) => f.filename === activeTab) ?? null
 
+    // Extract summary + assumptions from first file's frontmatter or top section
+    // (in future could store these in store; for now rely on file content)
+    const hasSummary = generatedFiles.length > 0
+
     const handleContentChange = (newContent: string) => {
         if (!currentFile) return
         setGeneratedFiles(
             generatedFiles.map((f) =>
                 f.filename === currentFile.filename
                     ? { ...f, content: newContent }
-                    : f
-            )
+                    : f,
+            ),
         )
     }
 
-    const handleRegenerate = () => {
-        setGeneratedFiles([])
-        setGenerationPhase('idle')
+    const handleNewSpec = () => {
+        reset()
     }
 
-    if (generatedFiles.length === 0) {
+    const handleRetry = () => {
+        clearError()
+        startGeneration()
+    }
+
+    // ── Stage: analyzing ──────────────────────────────────────────
+    if (generationStage === 'analyzing') {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-                <FileText className="h-12 w-12 text-slate-600 mb-4" />
-                <p className="text-slate-400">No documents generated yet</p>
-                <p className="text-sm text-slate-600 mt-1">
-                    Enter your idea and click Generate to create documents
+                <Loader2 className="h-8 w-8 text-cyan-400 animate-spin mb-4" />
+                <p className="text-slate-300 font-medium">
+                    {t(lang, 'analyzing')}
                 </p>
             </div>
         )
     }
+
+    // ── Stage: generating ─────────────────────────────────────────
+    if (generationStage === 'generating') {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+                <Loader2 className="h-8 w-8 text-cyan-400 animate-spin mb-4" />
+                <p className="text-slate-300 font-medium">
+                    {t(lang, 'generatingDocs')}
+                </p>
+            </div>
+        )
+    }
+
+    // ── Stage: questioning ────────────────────────────────────────
+    if (generationStage === 'questioning') {
+        return <QuestionFlow lang={lang} />
+    }
+
+    // ── Stage: error ──────────────────────────────────────────────
+    if (generationStage === 'error') {
+        return (
+            <div className="mx-auto max-w-2xl px-4 py-10">
+                <Card className="border-red-700/50 bg-red-900/10 p-6 text-center">
+                    <AlertTriangle className="h-10 w-10 text-red-400 mx-auto mb-3" />
+                    <h3 className="text-lg font-semibold text-red-300 mb-2">
+                        {t(lang, 'errors')}
+                    </h3>
+                    <p className="text-sm text-slate-300 mb-1">
+                        {error || t(lang, 'errorContact')}
+                    </p>
+                    {errorDetails && (
+                        <details className="mt-2 text-left">
+                            <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-300">
+                                Technical details
+                            </summary>
+                            <pre className="mt-2 text-xs text-slate-400 bg-slate-900 rounded p-2 overflow-x-auto whitespace-pre-wrap">
+                                {errorDetails}
+                            </pre>
+                        </details>
+                    )}
+                    <div className="flex items-center justify-center gap-3 mt-6">
+                        <Button variant="default" size="sm" onClick={handleRetry}>
+                            <RefreshCw className="h-4 w-4" />
+                            {t(lang, 'errorRetry')}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={handleNewSpec}>
+                            {t(lang, 'newSpec')}
+                        </Button>
+                    </div>
+                </Card>
+            </div>
+        )
+    }
+
+    // ── Stage: idle (no documents) ────────────────────────────────
+    if (generatedFiles.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+                <FileText className="h-12 w-12 text-slate-600 mb-4" />
+                <p className="text-slate-400">{t(lang, 'welcomeTitle')}</p>
+                <p className="text-sm text-slate-600 mt-1">
+                    {t(lang, 'welcomeDesc')}
+                </p>
+            </div>
+        )
+    }
+
+    // ── Stage: done (files present) ───────────────────────────────
 
     // Extract Mermaid content from current file
     const mermaidBlocks = useMemo(() => {
@@ -64,28 +156,44 @@ export function OutputPanel() {
         return blocks
     }, [currentFile])
 
-    // Get project name for ZIP
-    const projectName = useGeneratorStore((s) =>
-        s.advancedConstraints?.projectName || s.answers['project_name'] || 'project'
+    // Get project name
+    const projectName = useGeneratorStore(
+        (s) => s.advancedConstraints?.projectName || 'project',
     )
 
     return (
         <div className="mx-auto max-w-4xl px-4 py-6 space-y-4">
             {/* Actions bar */}
-            <div className="flex items-center justify-between">
-                <h2 className="text-sm font-medium text-slate-400">Generated Documents</h2>
-                <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="text-sm font-medium text-slate-400">
+                    {t(lang, 'summary')}
+                </h2>
+                <div className="flex items-center gap-2 flex-wrap">
                     <ExportActions
                         currentFile={currentFile}
                         allFiles={generatedFiles}
                         projectName={projectName}
                     />
-                    <Button variant="ghost" size="sm" onClick={handleRegenerate}>
+                    <Button variant="ghost" size="sm" onClick={handleNewSpec}>
                         <RefreshCw className="h-4 w-4" />
-                        New Spec
+                        {t(lang, 'newSpec')}
                     </Button>
                 </div>
             </div>
+
+            {/* Summary + Assumptions — extracted from first file content */}
+            {hasSummary && generatedFiles[0] && (
+                <Card className="p-4 space-y-2">
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                        {generatedFiles[0].content
+                            .split('\n')
+                            .slice(0, 5)
+                            .filter((l) => l.trim() && !l.startsWith('#'))
+                            .join(' ')
+                            .slice(0, 300)}
+                    </p>
+                </Card>
+            )}
 
             {/* Tabs */}
             <OutputTabs
@@ -100,7 +208,9 @@ export function OutputPanel() {
                     {/* Mermaid diagrams (if any in this file) */}
                     {mermaidBlocks.length > 0 && (
                         <Card className="space-y-4">
-                            <h3 className="text-sm font-medium text-slate-400">Diagrams</h3>
+                            <h3 className="text-sm font-medium text-slate-400">
+                                {t(lang, 'diagrams')}
+                            </h3>
                             {mermaidBlocks.map((block, i) => (
                                 <MermaidPreview key={i} content={block} />
                             ))}
@@ -117,3 +227,5 @@ export function OutputPanel() {
         </div>
     )
 }
+
+export default OutputPanel

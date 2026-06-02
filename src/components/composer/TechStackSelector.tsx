@@ -1,8 +1,14 @@
 import { TECH_STACKS } from '../../types'
 import { Select } from '../ui/Select'
 import { useGeneratorStore } from '../../stores/generatorStore'
+import { t, type Lang } from '../../lib/i18n/translations'
+import { HelpTooltip } from '../ui/HelpTooltip'
 
-export function TechStackSelector() {
+type Props = {
+    lang: Lang
+}
+
+export function TechStackSelector({ lang }: Props) {
     const techStack = useGeneratorStore((s) => s.techStack)
     const customStack = useGeneratorStore((s) => s.customStack)
     const setTechStack = useGeneratorStore((s) => s.setTechStack)
@@ -20,12 +26,15 @@ export function TechStackSelector() {
 
     return (
         <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-slate-400">Tech Stack</label>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                {t(lang, 'techStack')}
+                <HelpTooltip tooltipId="techStack" lang={lang} />
+            </label>
             <Select
                 options={TECH_STACKS}
                 value={techStack}
                 onChange={(v) => setTechStack(v as any)}
-                placeholder="Pilih Tech Stack"
+                placeholder={t(lang, 'placeholderStack')}
             />
             {techStack === 'custom' && (
                 <div className="mt-2 space-y-2 rounded-lg border border-slate-700 bg-slate-800/30 p-3">

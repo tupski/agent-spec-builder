@@ -1,104 +1,32 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, lazy, Suspense } from 'react'
 import { Send } from 'lucide-react'
 import { AutoGrowTextarea } from './AutoGrowTextarea'
 import { ComposerTools } from './ComposerTools'
+import { ExamplePrompts } from './ExamplePrompts'
 import { Button } from '../ui/Button'
-import { QuestionFlow } from '../questions/QuestionFlow'
-import { OutputPanel } from '../output/OutputPanel'
 import { useGeneratorStore } from '../../stores/generatorStore'
-import { extractRequirements } from '../../lib/analyzers/requirementExtractor'
-import { analyzeAmbiguity } from '../../lib/analyzers/ambiguityAnalyzer'
-import { generateDocuments } from '../../lib/generators/documentGenerator'
+import { AI_CONFIG } from '../../lib/ai/aiConfig'
+import { t, type Lang } from '../../lib/i18n/translations'
 
-export function ChatComposer() {
+const OutputPanel = lazy(() => import('../output/OutputPanel'))
+
+type Props = {
+    lang: Lang
+}
+
+export function ChatComposer({ lang }: Props) {
     const rawIdea = useGeneratorStore((s) => s.rawIdea)
     const setRawIdea = useGeneratorStore((s) => s.setRawIdea)
+    const generationStage = useGeneratorStore((s) => s.generationStage)
     const isGenerating = useGeneratorStore((s) => s.isGenerating)
-    const generationPhase = useGeneratorStore((s) => s.generationPhase)
-    const agentTarget = useGeneratorStore((s) => s.agentTarget)
-    const preferredModel = useGeneratorStore((s) => s.preferredModel)
-    const selectedOutputs = useGeneratorStore((s) => s.selectedOutputs)
-    const techStack = useGeneratorStore((s) => s.techStack)
-    const advancedConstraints = useGeneratorStore((s) => s.advancedConstraints)
-    const questions = useGeneratorStore((s) => s.questions)
-    const answers = useGeneratorStore((s) => s.answers)
-    const generatedFiles = useGeneratorStore((s) => s.generatedFiles)
-    const customModelName = useGeneratorStore((s) => s.customModelName)
-    const customStack = useGeneratorStore((s) => s.customStack)
-    const setGenerationPhase = useGeneratorStore((s) => s.setGenerationPhase)
-    const setAnalysisResult = useGeneratorStore((s) => s.setAnalysisResult)
-    const setQuestions = useGeneratorStore((s) => s.setQuestions)
-    const setGeneratedFiles = useGeneratorStore((s) => s.setGeneratedFiles)
+    const startGeneration = useGeneratorStore((s) => s.startGeneration)
 
-    // Auto-generate when phase transitions to 'generating'
-    useEffect(() => {
-        if (generationPhase === 'generating' && generatedFiles.length === 0) {
-            const files = generateDocuments({
-                rawIdea,
-                agentTarget,
-                preferredModel,
-                customModelName,
-                selectedOutputs,
-                techStack,
-                customStack: customStack as Record<string, string>,
-                advancedConstraints,
-                questions,
-                answers,
-            })
-            setGeneratedFiles(files)
-            setGenerationPhase('done')
-        }
-    }, [
-        generationPhase,
-        rawIdea,
-        agentTarget,
-        preferredModel,
-        customModelName,
-        selectedOutputs,
-        techStack,
-        customStack,
-        advancedConstraints,
-        questions,
-        answers,
-        setGeneratedFiles,
-        setGenerationPhase,
-        generatedFiles.length,
-    ])
+    const hasApiKey = !!AI_CONFIG.apiKey
 
     const handleGenerate = useCallback(() => {
         if (!rawIdea.trim() || isGenerating) return
-
-        setGenerationPhase('analyzing')
-
-        const extracted = extractRequirements(rawIdea, advancedConstraints)
-        const result = analyzeAmbiguity(
-            rawIdea,
-            extracted,
-            agentTarget,
-            selectedOutputs,
-            techStack,
-            advancedConstraints,
-        )
-
-        setAnalysisResult(result)
-
-        if (result.isClearEnough) {
-            setGenerationPhase('generating')
-        } else {
-            setQuestions(result.suggestedQuestions)
-            setGenerationPhase('questioning')
-        }
-    }, [
-        rawIdea,
-        isGenerating,
-        agentTarget,
-        selectedOutputs,
-        techStack,
-        advancedConstraints,
-        setGenerationPhase,
-        setAnalysisResult,
-        setQuestions,
-    ])
+        startGeneration()
+    }, [rawIdea, isGenerating, startGeneration])
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -110,18 +38,51 @@ export function ChatComposer() {
         [handleGenerate],
     )
 
+    const handleExampleSelect = useCallback(
+        (prompt: string) => {
+            setRawIdea(prompt)
+        },
+        [setRawIdea],
+    )
+
+    // Show composer only in idle/analyzing/questioning/done-with-no-files
+    // Show OutputPanel in done/error/generating
+    const showComposer =
+        generationStage === 'idle' ||
+        generationStage === 'analyzing'
+
+    const showOutput =
+        generationStage === 'generating' ||
+        generationStage === 'done' ||
+        generationStage === 'error' ||
+        generationStage === 'questioning'
+
     return (
-        <div className="mx-auto max-w-3xl px-4 py-8">
-            {generationPhase === 'idle' || generationPhase === 'analyzing' ? (
+        <div className="mx-auto max-w-3xl px-4 py-6 md:py-8">
+            {showComposer && (
                 <div className="flex flex-col gap-4">
                     <AutoGrowTextarea
                         value={rawIdea}
                         onChange={(e) => setRawIdea(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Tulis ide kasar project kamu di sini... contoh: Saya mau bikin aplikasi kasir sederhana untuk warung kecil..."
+                        onGenerate={handleGenerate}
+                        placeholder={t(lang, 'placeholderIdea')}
                     />
-                    <ComposerTools />
-                    <div className="flex justify-end">
+                    <ExamplePrompts onSelect={handleExampleSelect} lang={lang} />
+                    <ComposerTools lang={lang} />
+
+                    {/* AI Status indicator */}
+                    <div className="flex items-center justify-center gap-2">
+                        <span
+                            className={`inline-block h-2 w-2 rounded-full ${hasApiKey ? 'bg-emerald-500' : 'bg-yellow-500'
+                                }`}
+                        />
+                        <span className="text-xs text-slate-500">
+                            {hasApiKey ? t(lang, 'aiConnected') : t(lang, 'aiKeyNotSet')}
+                        </span>
+                    </div>
+
+                    <div className="flex justify-end px-1 md:px-0">
                         <Button
                             onClick={handleGenerate}
                             disabled={!rawIdea.trim() || isGenerating}
@@ -129,22 +90,24 @@ export function ChatComposer() {
                             className="gap-2"
                         >
                             <Send className="h-4 w-4" />
-                            {isGenerating ? 'Processing...' : 'Generate'}
+                            {isGenerating ? t(lang, 'generating') : t(lang, 'generate')}
                         </Button>
                     </div>
                     <p className="text-center text-xs text-slate-600">
-                        Ctrl/Cmd + Enter untuk generate
+                        {t(lang, 'ctrlEnter')}
                     </p>
                 </div>
-            ) : generationPhase === 'questioning' ? (
-                <QuestionFlow />
-            ) : generationPhase === 'generating' ? (
-                <div className="text-center py-16">
-                    <p className="text-slate-400">Generating documents...</p>
-                </div>
-            ) : generationPhase === 'done' ? (
-                <OutputPanel />
-            ) : null}
+            )}
+
+            {showOutput && (
+                <Suspense fallback={
+                    <div className="flex items-center justify-center py-16 text-slate-500 text-sm">
+                        Loading...
+                    </div>
+                }>
+                    <OutputPanel lang={lang} />
+                </Suspense>
+            )}
         </div>
     )
 }

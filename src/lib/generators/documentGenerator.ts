@@ -1,3 +1,6 @@
+// LEGACY: Local template-based generator preserved as fallback.
+// AI generation now happens in src/stores/generatorStore.ts via callAi().
+
 import type {
     GeneratedFile,
     OutputDocument,

@@ -1,7 +1,7 @@
-import JSZip from 'jszip'
 import type { GeneratedFile } from '../../types'
 
 export async function downloadAsZip(files: GeneratedFile[], projectName: string) {
+    const { default: JSZip } = await import('jszip')
     const zip = new JSZip()
 
     for (const file of files) {

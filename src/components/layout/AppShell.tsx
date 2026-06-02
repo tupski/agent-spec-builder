@@ -1,22 +1,21 @@
 import type { ReactNode } from 'react'
 import { Header } from './Header'
+import type { Lang } from '../../lib/i18n/translations'
 
 interface AppShellProps {
   children: ReactNode
+  lang: Lang
+  onLanguageChange: (lang: Lang) => void
   onNewSpec: () => void
-  onDrafts: () => void
-  onImport: () => void
-  onExport: () => void
 }
 
-export function AppShell({ children, onNewSpec, onDrafts, onImport, onExport }: AppShellProps) {
+export function AppShell({ children, lang, onLanguageChange, onNewSpec }: AppShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
       <Header
+        lang={lang}
+        onLanguageChange={onLanguageChange}
         onNewSpec={onNewSpec}
-        onDrafts={onDrafts}
-        onImport={onImport}
-        onExport={onExport}
       />
       <main className="flex-1">
         {children}

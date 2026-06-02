@@ -1,22 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import mermaid from 'mermaid'
 import { cn } from '../../lib/utils/cn'
-
-// Initialize mermaid once
-mermaid.initialize({
-    startOnLoad: false,
-    theme: 'dark',
-    themeVariables: {
-        background: '#1e293b',
-        primaryColor: '#0ea5e9',
-        primaryTextColor: '#f1f5f9',
-        primaryBorderColor: '#334155',
-        lineColor: '#64748b',
-        secondaryColor: '#334155',
-        tertiaryColor: '#0f172a',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-    },
-})
 
 interface MermaidPreviewProps {
     content: string
@@ -26,25 +9,67 @@ interface MermaidPreviewProps {
 export function MermaidPreview({ content, className }: MermaidPreviewProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const [error, setError] = useState<string | null>(null)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        if (!containerRef.current) return
+        let cancelled = false
 
         const renderMermaid = async () => {
             try {
+                setLoading(true)
                 setError(null)
+
+                const mermaidModule = await import('mermaid')
+                const mermaid = mermaidModule.default
+
+                // Initialize once (idempotent after first call)
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: 'dark',
+                    themeVariables: {
+                        background: '#1e293b',
+                        primaryColor: '#0ea5e9',
+                        primaryTextColor: '#f1f5f9',
+                        primaryBorderColor: '#334155',
+                        lineColor: '#64748b',
+                        secondaryColor: '#334155',
+                        tertiaryColor: '#0f172a',
+                        fontFamily: 'system-ui, -apple-system, sans-serif',
+                    },
+                })
+
+                if (cancelled || !containerRef.current) return
+
                 const { svg } = await mermaid.render('mermaid-svg', content)
-                if (containerRef.current) {
+                if (!cancelled && containerRef.current) {
                     containerRef.current.innerHTML = svg
                 }
             } catch (err) {
-                console.error('Mermaid render error:', err)
-                setError('Failed to render diagram')
+                if (!cancelled) {
+                    console.error('Mermaid render error:', err)
+                    setError('Failed to render diagram')
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false)
+                }
             }
         }
 
         renderMermaid()
+
+        return () => {
+            cancelled = true
+        }
     }, [content])
+
+    if (loading) {
+        return (
+            <div className={cn('flex items-center justify-center py-6 text-xs text-slate-500', className)}>
+                Loading diagram...
+            </div>
+        )
+    }
 
     if (error) {
         return (
