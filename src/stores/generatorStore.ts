@@ -59,6 +59,7 @@ interface GeneratorState {
     setQuestions: (questions: Question[]) => void
     setCurrentQuestionIndex: (index: number) => void
     setAnswer: (questionId: string, answer: string) => void
+    setAnswers: (answers: Record<string, string>) => void
     goToNextQuestion: () => void
     goToPrevQuestion: () => void
     isLastQuestion: () => boolean
@@ -134,6 +135,7 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
         set((state) => ({
             answers: { ...state.answers, [questionId]: answer },
         })),
+    setAnswers: (answers) => set({ answers }),
 
     goToNextQuestion: () => {
         const { currentQuestionIndex, questions } = get()
