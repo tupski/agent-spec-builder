@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { Send } from 'lucide-react'
 import { AutoGrowTextarea } from './AutoGrowTextarea'
 import { ComposerTools } from './ComposerTools'
@@ -7,6 +7,7 @@ import { QuestionFlow } from '../questions/QuestionFlow'
 import { useGeneratorStore } from '../../stores/generatorStore'
 import { extractRequirements } from '../../lib/analyzers/requirementExtractor'
 import { analyzeAmbiguity } from '../../lib/analyzers/ambiguityAnalyzer'
+import { generateDocuments } from '../../lib/generators/documentGenerator'
 
 export function ChatComposer() {
     const rawIdea = useGeneratorStore((s) => s.rawIdea)
@@ -14,12 +15,54 @@ export function ChatComposer() {
     const isGenerating = useGeneratorStore((s) => s.isGenerating)
     const generationPhase = useGeneratorStore((s) => s.generationPhase)
     const agentTarget = useGeneratorStore((s) => s.agentTarget)
+    const preferredModel = useGeneratorStore((s) => s.preferredModel)
     const selectedOutputs = useGeneratorStore((s) => s.selectedOutputs)
     const techStack = useGeneratorStore((s) => s.techStack)
     const advancedConstraints = useGeneratorStore((s) => s.advancedConstraints)
+    const questions = useGeneratorStore((s) => s.questions)
+    const answers = useGeneratorStore((s) => s.answers)
+    const generatedFiles = useGeneratorStore((s) => s.generatedFiles)
+    const customModelName = useGeneratorStore((s) => s.customModelName)
+    const customStack = useGeneratorStore((s) => s.customStack)
     const setGenerationPhase = useGeneratorStore((s) => s.setGenerationPhase)
     const setAnalysisResult = useGeneratorStore((s) => s.setAnalysisResult)
     const setQuestions = useGeneratorStore((s) => s.setQuestions)
+    const setGeneratedFiles = useGeneratorStore((s) => s.setGeneratedFiles)
+
+    // Auto-generate when phase transitions to 'generating'
+    useEffect(() => {
+        if (generationPhase === 'generating' && generatedFiles.length === 0) {
+            const files = generateDocuments({
+                rawIdea,
+                agentTarget,
+                preferredModel,
+                customModelName,
+                selectedOutputs,
+                techStack,
+                customStack: customStack as Record<string, string>,
+                advancedConstraints,
+                questions,
+                answers,
+            })
+            setGeneratedFiles(files)
+            setGenerationPhase('done')
+        }
+    }, [
+        generationPhase,
+        rawIdea,
+        agentTarget,
+        preferredModel,
+        customModelName,
+        selectedOutputs,
+        techStack,
+        customStack,
+        advancedConstraints,
+        questions,
+        answers,
+        setGeneratedFiles,
+        setGenerationPhase,
+        generatedFiles.length,
+    ])
 
     const handleGenerate = useCallback(() => {
         if (!rawIdea.trim() || isGenerating) return
@@ -40,7 +83,6 @@ export function ChatComposer() {
 
         if (result.isClearEnough) {
             setGenerationPhase('generating')
-            console.log('Prompt clear enough, generating directly...', { result })
         } else {
             setQuestions(result.suggestedQuestions)
             setGenerationPhase('questioning')
@@ -98,9 +140,6 @@ export function ChatComposer() {
             ) : generationPhase === 'generating' ? (
                 <div className="text-center py-16">
                     <p className="text-slate-400">Generating documents...</p>
-                    <p className="text-xs text-slate-600 mt-2">
-                        (Phase 4 will implement this)
-                    </p>
                 </div>
             ) : generationPhase === 'done' ? (
                 <div className="text-center py-16">

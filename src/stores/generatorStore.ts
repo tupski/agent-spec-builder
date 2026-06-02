@@ -7,6 +7,7 @@ import type {
     CustomStack,
     AdvancedConstraints,
     Question,
+    GeneratedFile,
 } from '../types'
 import type { AnalysisResult } from '../lib/analyzers/ambiguityAnalyzer'
 
@@ -36,6 +37,9 @@ interface GeneratorState {
     currentQuestionIndex: number
     answers: Record<string, string>
 
+    // Generated output
+    generatedFiles: GeneratedFile[]
+
     // Actions
     setRawIdea: (idea: string) => void
     setAgentTarget: (target: AgentTarget) => void
@@ -59,6 +63,9 @@ interface GeneratorState {
     goToPrevQuestion: () => void
     isLastQuestion: () => boolean
     hasMoreQuestions: () => boolean
+
+    // Generated files actions
+    setGeneratedFiles: (generatedFiles: GeneratedFile[]) => void
 
     // Reset
     reset: () => void
@@ -89,6 +96,7 @@ const initialState = {
     questions: [] as Question[],
     currentQuestionIndex: 0,
     answers: {} as Record<string, string>,
+    generatedFiles: [] as GeneratedFile[],
 }
 
 export const useGeneratorStore = create<GeneratorState>((set, get) => ({
@@ -150,6 +158,8 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
         const { currentQuestionIndex, questions } = get()
         return currentQuestionIndex < questions.length - 1
     },
+
+    setGeneratedFiles: (generatedFiles) => set({ generatedFiles }),
 
     reset: () => set(initialState),
 }))
