@@ -32,7 +32,7 @@ export function OutputPanel({ lang }: Props) {
     const [activeTab, setActiveTab] = useState<string>('')
 
     // Set initial active tab when files change
-    useEffect(() => {
+      useEffect(() => {
         if (generatedFiles.length > 0 && !activeTab) {
             setActiveTab(generatedFiles[0].filename)
         }
